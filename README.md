@@ -76,7 +76,7 @@ Masukkan data saat diminta:
 Unduh repositori ini ke dalam VM Anda:
 
 ```bash
-git clone [https://github.com/username/aws-infra-ansible-mysql.git](https://github.com/username/aws-infra-ansible-mysql.git)
+git clone https://github.com/kanjeeng/aws-infra-ansible-mysql.git
 cd aws-infra-ansible-mysql
 
 ```
