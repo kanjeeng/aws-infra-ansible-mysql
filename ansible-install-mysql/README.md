@@ -1,4 +1,3 @@
-```markdown
 # Automasi Instalasi MySQL dengan Ansible
 
 Proyek ini berisi panduan dan file konfigurasi Ansible untuk mengotomatiskan instalasi dan konfigurasi klaster basis data MySQL pada Managed Nodes (Database Nodes) secara terpusat melalui Bastion Host (Control Node)[cite: 10].
