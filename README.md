@@ -3,7 +3,9 @@
 Proyek ini bertujuan untuk mendeploy infrastruktur dasar di AWS secara otomatis menggunakan Terraform. Infrastruktur mencakup VPC, Subnet, Internet Gateway, Security Groups, 1x Bastion Host, dan 2x Database Nodes (Managed Nodes) yang siap dikelola lebih lanjut menggunakan Ansible.
 
 ### Arsitektur Infrastruktur
-![Arsitektur Infrastruktur AWS](./infra.png)
+<p align="center">
+  <img src="./infra.png" alt="Arsitektur Infrastruktur AWS" width="600">
+</p>
 
 ---
 
