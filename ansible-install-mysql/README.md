@@ -2,9 +2,6 @@
 
 Proyek ini bertujuan untuk mendeploy infrastruktur dasar di AWS secara otomatis menggunakan Terraform. Infrastruktur mencakup VPC, Subnet, Internet Gateway, Security Groups, 1x Bastion Host, dan 2x Database Nodes (Managed Nodes) yang siap dikelola lebih lanjut menggunakan Ansible.
 
-### Arsitektur Infrastruktur
-![Arsitektur Infrastruktur AWS](./infra.png)
-
 ---
 
 ## Prasyarat System (VM Ansible / Ubuntu)
@@ -20,7 +17,7 @@ Jalankan perintah berikut di terminal VM Ubuntu Anda untuk menginstal paket depe
 sudo apt update && sudo apt install -y unzip curl gnupg software-properties-common git
 
 # Install AWS CLI v2
-curl "[https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip](https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip)" -o "awscliv2.zip"
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install
 rm -rf awscliv2.zip aws/
@@ -29,8 +26,8 @@ rm -rf awscliv2.zip aws/
 aws --version
 
 # Install Terraform (Repository Resmi HashiCorp)
-wget -O- [https://apt.releases.hashicorp.com/gpg](https://apt.releases.hashicorp.com/gpg) | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] [https://apt.releases.hashicorp.com](https://apt.releases.hashicorp.com) $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt update && sudo apt install -y terraform
 
 # Verifikasi Terraform
@@ -76,7 +73,7 @@ Masukkan data saat diminta:
 Unduh repositori ini ke dalam VM Anda:
 
 ```bash
-git clone [https://github.com/username/aws-infra-ansible-mysql.git](https://github.com/username/aws-infra-ansible-mysql.git)
+git clone https://github.com/username/aws-infra-ansible-mysql.git
 cd aws-infra-ansible-mysql
 
 ```
@@ -152,7 +149,5 @@ Untuk menghapus seluruh infrastruktur AWS yang dibuat oleh proyek ini agar tidak
 
 ```bash
 terraform destroy -auto-approve
-
-```
 
 ```

@@ -1,0 +1,20 @@
+---
+- name: Instalasi dan Konfigurasi MySQL Server di DB Nodes
+  hosts: db_nodes
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install MySQL Server
+      apt:
+        name: mysql-server
+        state: present
+
+    - name: Memastikan service MySQL berjalan dan aktif saat booting
+      service:
+        name: mysql
+        state: started
+        enabled: yes
