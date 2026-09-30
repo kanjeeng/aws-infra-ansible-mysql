@@ -1,44 +1,44 @@
 # Automasi Instalasi MySQL dengan Ansible
 
-Proyek ini berisi panduan dan file konfigurasi Ansible untuk mengotomatiskan instalasi dan konfigurasi klaster basis data MySQL pada Managed Nodes (Database Nodes) secara terpusat melalui Bastion Host (Control Node)[cite: 10].
+Proyek ini berisi panduan dan file konfigurasi Ansible untuk mengotomatiskan instalasi dan konfigurasi klaster basis data MySQL pada Managed Nodes (Database Nodes) secara terpusat melalui Bastion Host (Control Node).
 
 ### Arsitektur Infrastruktur
 <p align="center">
-  <img src="../../infra.png" alt="Arsitektur Infrastruktur AWS" width="600">
+  <img src="../infra.png" alt="Arsitektur Infrastruktur AWS" width="600">
 </p>
 
 ---
 
 ## 1. Persiapan: Mengaktifkan SSH Agent dan Mendaftarkan Kunci
 
-Untuk menjaga keamanan, kunci privat (`id_rsa`) tidak boleh disimpan di dalam Bastion Host[cite: 12]. Kita akan menggunakan metode **SSH Agent Forwarding** untuk meneruskan identitas kunci dari mesin lokal secara virtual[cite: 12]. 
+Untuk menjaga keamanan, kunci privat (`id_rsa`) tidak boleh disimpan di dalam Bastion Host. Kita akan menggunakan metode **SSH Agent Forwarding** untuk meneruskan identitas kunci dari mesin lokal secara virtual. 
 
 Jalankan perintah berikut di komputer lokal Anda sesuai dengan Sistem Operasi yang digunakan:
 
 ### Linux (Bash / Zsh) & Git Bash (Windows)
-* Mengaktifkan ssh-agent di latar belakang: `eval "$(ssh-agent -s)"`[cite: 12, 14]
-* Memuat kunci privat ke memori agent: `ssh-add ~/.ssh/id_rsa`[cite: 12, 14]
+* Mengaktifkan ssh-agent di latar belakang: `eval "$(ssh-agent -s)"`
+* Memuat kunci privat ke memori agent: `ssh-add ~/.ssh/id_rsa`
 
 ### macOS (Terminal)
-* Mengaktifkan ssh-agent di latar belakang: `eval "$(ssh-agent -s)"`[cite: 13]
-* Memuat kunci privat ke macOS Keychain: `ssh-add --apple-use-keychain ~/.ssh/id_rsa`[cite: 13]
-* *(Catatan: Gunakan `-K` untuk macOS sebelum Monterey 12)*[cite: 13]
+* Mengaktifkan ssh-agent di latar belakang: `eval "$(ssh-agent -s)"`
+* Memuat kunci privat ke macOS Keychain: `ssh-add --apple-use-keychain ~/.ssh/id_rsa`
+* *(Catatan: Gunakan `-K` untuk macOS sebelum Monterey 12)*
 
 ### Windows (PowerShell) - Run as Administrator
-* Mengubah tipe startup service menjadi Automatic: `Set-Service -Name ssh-agent -StartupType Automatic`[cite: 13]
-* Menjalankan service: `Start-Service ssh-agent`[cite: 13]
-* Memuat kunci privat (bisa di PowerShell biasa): `ssh-add $env:USERPROFILE\.ssh\id_rsa`[cite: 13]
+* Mengubah tipe startup service menjadi Automatic: `Set-Service -Name ssh-agent -StartupType Automatic`
+* Menjalankan service: `Start-Service ssh-agent`
+* Memuat kunci privat (bisa di PowerShell biasa): `ssh-add $env:USERPROFILE\.ssh\id_rsa`
 
 ### Windows (Command Prompt / CMD) - Run as Administrator
-* Mengubah startup service menjadi Otomatis: `sc config ssh-agent start= auto`[cite: 13]
-* Menjalankan service: `net start ssh-agent`[cite: 13]
-* Memuat kunci privat (bisa di CMD biasa): `ssh-add %USERPROFILE%\.ssh\id_rsa`[cite: 13]
+* Mengubah startup service menjadi Otomatis: `sc config ssh-agent start= auto`
+* Menjalankan service: `net start ssh-agent`
+* Memuat kunci privat (bisa di CMD biasa): `ssh-add %USERPROFILE%\.ssh\id_rsa`
 
 ---
 
 ## 2. Mengakses Bastion Host & Persiapan Environment
 
-Setelah kunci terdaftar di lokal, lakukan koneksi SSH ke Bastion Host dengan menambahkan argumen `-A` (Agent Forwarding)[cite: 14].
+Setelah kunci terdaftar di lokal, lakukan koneksi SSH ke Bastion Host dengan menambahkan argumen `-A` (Agent Forwarding).
 
 ```bash
 # Ganti IP dengan Public IP Bastion Host Anda
