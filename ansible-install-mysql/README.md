@@ -1,153 +1,154 @@
-# AWS Infrastructure Provisioning with Terraform
+```markdown
+# Automasi Instalasi MySQL dengan Ansible
 
-Proyek ini bertujuan untuk mendeploy infrastruktur dasar di AWS secara otomatis menggunakan Terraform. Infrastruktur mencakup VPC, Subnet, Internet Gateway, Security Groups, 1x Bastion Host, dan 2x Database Nodes (Managed Nodes) yang siap dikelola lebih lanjut menggunakan Ansible.
+Proyek ini berisi panduan dan file konfigurasi Ansible untuk mengotomatiskan instalasi dan konfigurasi klaster basis data MySQL pada Managed Nodes (Database Nodes) secara terpusat melalui Bastion Host (Control Node)[cite: 10].
 
----
-
-## Prasyarat System (VM Ansible / Ubuntu)
-
-Sistem operasi yang direkomendasikan: **Ubuntu 20.04 LTS / 22.04 LTS / 24.04 LTS**.
-
-### 1. Instalasi Tools Utama (Terraform & AWS CLI)
-
-Jalankan perintah berikut di terminal VM Ubuntu Anda untuk menginstal paket dependensi, AWS CLI v2, dan Terraform:
-
-```bash
-# Update paket sistem & install dependensi dasar
-sudo apt update && sudo apt install -y unzip curl gnupg software-properties-common git
-
-# Install AWS CLI v2
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
-rm -rf awscliv2.zip aws/
-
-# Verifikasi AWS CLI
-aws --version
-
-# Install Terraform (Repository Resmi HashiCorp)
-wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt update && sudo apt install -y terraform
-
-# Verifikasi Terraform
-terraform -v
-
-```
+### Arsitektur Infrastruktur
+<p align="center">
+  <img src="../../infra.png" alt="Arsitektur Infrastruktur AWS" width="600">
+</p>
 
 ---
 
-## Langkah Deployment Infrastruktur
+## 1. Persiapan: Mengaktifkan SSH Agent dan Mendaftarkan Kunci
 
-### 1. Generate SSH Key Pair
+Untuk menjaga keamanan, kunci privat (`id_rsa`) tidak boleh disimpan di dalam Bastion Host[cite: 12]. Kita akan menggunakan metode **SSH Agent Forwarding** untuk meneruskan identitas kunci dari mesin lokal secara virtual[cite: 12]. 
 
-SSH Key ini akan terdaftar secara otomatis di AWS EC2 Key Pair untuk akses SSH ke Bastion Host dan Database Nodes.
+Jalankan perintah berikut di komputer lokal Anda sesuai dengan Sistem Operasi yang digunakan:
 
-```bash
-# Generate kunci SSH 4096-bit tanpa passphrase (tekan Enter untuk opsi default)
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
+### Linux (Bash / Zsh) & Git Bash (Windows)
+* Mengaktifkan ssh-agent di latar belakang: `eval "$(ssh-agent -s)"`[cite: 12, 14]
+* Memuat kunci privat ke memori agent: `ssh-add ~/.ssh/id_rsa`[cite: 12, 14]
 
-# Pastikan public key sudah terbentuk
-cat ~/.ssh/id_rsa.pub
+### macOS (Terminal)
+* Mengaktifkan ssh-agent di latar belakang: `eval "$(ssh-agent -s)"`[cite: 13]
+* Memuat kunci privat ke macOS Keychain: `ssh-add --apple-use-keychain ~/.ssh/id_rsa`[cite: 13]
+* *(Catatan: Gunakan `-K` untuk macOS sebelum Monterey 12)*[cite: 13]
 
-```
+### Windows (PowerShell) - Run as Administrator
+* Mengubah tipe startup service menjadi Automatic: `Set-Service -Name ssh-agent -StartupType Automatic`[cite: 13]
+* Menjalankan service: `Start-Service ssh-agent`[cite: 13]
+* Memuat kunci privat (bisa di PowerShell biasa): `ssh-add $env:USERPROFILE\.ssh\id_rsa`[cite: 13]
 
-### 2. Konfigurasi Kredensial AWS
-
-Konfigurasikan akun AWS Anda menggunakan Access Key dan Secret Key dari IAM Console:
-
-```bash
-aws configure
-
-```
-
-Masukkan data saat diminta:
-
-* **AWS Access Key ID**: `<Access-Key-Anda>`
-* **AWS Secret Access Key**: `<Secret-Key-Anda>`
-* **Default region name**: `ap-southeast-1`
-* **Default output format**: `json`
-
-### 3. Clone Repository Proyek
-
-Unduh repositori ini ke dalam VM Anda:
-
-```bash
-git clone https://github.com/username/aws-infra-ansible-mysql.git
-cd aws-infra-ansible-mysql
-
-```
+### Windows (Command Prompt / CMD) - Run as Administrator
+* Mengubah startup service menjadi Otomatis: `sc config ssh-agent start= auto`[cite: 13]
+* Menjalankan service: `net start ssh-agent`[cite: 13]
+* Memuat kunci privat (bisa di CMD biasa): `ssh-add %USERPROFILE%\.ssh\id_rsa`[cite: 13]
 
 ---
 
-## Eksekusi Terraform
+## 2. Mengakses Bastion Host & Persiapan Environment
 
-### 1. Inisialisasi (`terraform init`)
-
-Mendownload provider AWS dan menginisialisasi direktori kerja Terraform:
+Setelah kunci terdaftar di lokal, lakukan koneksi SSH ke Bastion Host dengan menambahkan argumen `-A` (Agent Forwarding)[cite: 14].
 
 ```bash
-terraform init
-
-```
-
-### 2. Validasi & Perencanaan (`terraform plan`)
-
-Memeriksa sintaks dan melihat rancangan perubahan infrastruktur sebelum diterapkan:
-
-```bash
-terraform plan
-
-```
-
-### 3. Eksekusi Deployment (`terraform apply`)
-
-Membangun seluruh resource di AWS:
-
-```bash
-terraform apply -auto-approve
-
-```
-
-Setelah proses selesai, simpan nilai **Outputs** yang muncul di terminal:
-
-* **bastion_public_ip**: IP Publik untuk Bastion Host.
-* **database_nodes_ips**: IP Privat untuk Managed Nodes (Database).
-* **vpc_id**: ID VPC yang terbentuk.
-
----
-
-## Pengujian Akses Remote (SSH)
-
-Gunakan fitur *SSH Agent Forwarding* agar kunci lokal Anda diteruskan saat melompat dari Bastion Host ke Database Node internal:
-
-```bash
-# 1. Aktifkan SSH Agent & Daftarkan Kunci
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_rsa
-
-# 2. Akses ke Bastion Host dengan Agent Forwarding (-A)
+# Ganti IP dengan Public IP Bastion Host Anda
 ssh -A ubuntu@<bastion_public_ip>
 
-# 3. Dari dalam Bastion, lompat ke Database Node Privat
-ssh ubuntu@<database_private_ip>
+```
+
+Verifikasi apakah kunci lokal telah berhasil diteruskan ke Bastion Host:
+
+```bash
+ssh-add -l
 
 ```
 
-Atau gunakan *one-liner ProxyJump*:
+*(Terminal akan menampilkan sidik jari/fingerprint dari kunci lokal Anda)*
+
+### Instalasi Ansible
+
+Di dalam terminal Bastion Host, perbarui repositori dan instal Ansible:
 
 ```bash
-ssh -J ubuntu@<bastion_public_ip> ubuntu@<database_private_ip>
+sudo apt update
+sudo apt install -y ansible
 
 ```
 
 ---
 
-## Menghapus Seluruh Infrastruktur (`terraform destroy`)
+## 3. Mengunduh Konfigurasi (Clone Repository)
 
-Untuk menghapus seluruh infrastruktur AWS yang dibuat oleh proyek ini agar tidak menimbulkan biaya tambahan:
+Unduh *playbook* dan konfigurasi Ansible langsung dari repositori:
 
 ```bash
-terraform destroy -auto-approve
+git clone [https://github.com/kanjeeng/aws-infra-ansible-mysql.git](https://github.com/kanjeeng/aws-infra-ansible-mysql.git)
+cd aws-infra-ansible-mysql/ansible-install-mysql
+
+```
+
+---
+
+## 4. Konfigurasi Inventori
+
+Buka file `inventory.ini` dan sesuaikan IP Private dengan Database Nodes milik Anda:
+
+```ini
+[db_nodes]
+10.0.1.222
+10.0.1.70
+
+```
+
+---
+
+## 5. Pengujian Konektivitas (Ping)
+
+Uji koneksi dari Bastion Host ke seluruh target node untuk memastikan SSH Agent berfungsi dan Ansible dapat menjangkau server:
+
+```bash
+ansible db_nodes -m ping
+
+```
+
+*(Pastikan hasilnya menampilkan status `SUCCESS` atau `pong`)*
+
+---
+
+## 6. Mengeksekusi Playbook MySQL
+
+Jalankan playbook untuk memulai instalasi dan konfigurasi otomatis MySQL Server:
+
+```bash
+ansible-playbook install_mysql.yml
+
+```
+
+Tunggu hingga proses selesai. Pada bagian `PLAY RECAP` di terminal, pastikan status menunjukkan `failed=0` dan `unreachable=0` yang membuktikan bahwa seluruh *tasks* berhasil dieksekusi.
+
+---
+
+## 7. Verifikasi Instalasi MySQL
+
+Untuk memastikan database benar-benar berjalan, lakukan pengujian langsung ke salah satu mesin Database (contoh IP: `10.0.1.222`):
+
+1. **Masuk ke Database Node**:
+```bash
+ssh ubuntu@10.0.1.222
+
+```
+
+
+
+2. **Cek Status Service MySQL**:
+```bash
+sudo systemctl status mysql
+
+```
+
+
+*(Pastikan statusnya `Active: active (running)`)*
+
+3. **Login ke Shell MySQL**:
+```bash
+sudo mysql -u root
+
+```
+
+
+
+
+```
 
 ```
